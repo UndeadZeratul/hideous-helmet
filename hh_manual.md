@@ -62,12 +62,12 @@ condition0  ..  condition1  ..  condition2  ..
 ### Examples:
 Normal:
 ```
-hun:1:blank,RBRSA3A7,STFULAUT
+hun:1:blank,STSEMAUT,STFULAUT
 sla:0:blank,STBURAUT
 ```
 
 Bitwise:
 ```
-s45:0:RBRSA3A7,STFULAUT:blank,2
+s45:0:STSEMAUT,STFULAUT:blank,2
 cpt:0:blank,STBURAUT:blank,1
 ```
