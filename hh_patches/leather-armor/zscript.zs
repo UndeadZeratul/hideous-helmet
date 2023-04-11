@@ -1,32 +1,19 @@
 version "4.7"
 
-class HHArmourTypeHandler_HDLeatherArmour : EventHandler
+class HHArmourOverride_HDLeatherArmourWorn : HCItemOverride
 {
-	override void WorldLoaded(WorldEvent e)
+	override void Init(HCStatusbar sb)
 	{
-		New("HHArmourType_HDLeatherArmourWorn");
-		Destroy();
-	}
-}
-
-class HHArmourType_HDLeatherArmourWorn : HHArmourType
-{
-	override string GetName()
-	{
-		return "HDLeatherArmour";
+		Priority = 0;
+		OverrideType = HCOVERRIDETYPE_ITEM;
 	}
 
-	override string GetWornName()
+	override bool CheckItem(Inventory item)
 	{
-		return "HDLeatherArmourWorn";
+		return (item.GetClassName() == "HDLeatherArmourWorn");
 	}
 
-	override void DrawArmour(
-		HDStatusBar sb,
-		HDPickup hp,
-		int hdFlags,
-		int gzFlags
-	)
+	override void DrawHUDStuff(HCStatusbar sb, Inventory item, int hdFlags, int gzFlags)
 	{
 		let arm = HDLeatherArmourWorn(hp);
 		let hdp = HDPlayerPawn(arm.Owner);
@@ -36,7 +23,7 @@ class HHArmourType_HDLeatherArmourWorn : HHArmourType
 			(0, -sb.mIndexFont.mFont.GetHeight() * 2);
 		sb.DrawBar(
 			"JAKTA0", "JAKET0",
-			arm.Durability, HDCONST_CORPORATEARMOUR,
+			arm.Durability, LEATHERARMOUR,
 			coords, -1, sb.SHADER_VERT,
 			gzFlags
 		);

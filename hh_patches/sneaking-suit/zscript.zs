@@ -1,32 +1,19 @@
 version "4.7"
 
-class HHArmourTypeHandler_WAN_SneakingSuit : EventHandler
+class HHArmourOverride_WAN_SneakingSuitWorn : HCItemOverride
 {
-	override void WorldLoaded(WorldEvent e)
+	override void Init(HCStatusbar sb)
 	{
-		New("HHArmourType_WAN_SneakingSuitWorn");
-		Destroy();
-	}
+		Priority = 0;
+		OverrideType = HCOVERRIDETYPE_ITEM;
 }
 
-class HHArmourType_WAN_SneakingSuitWorn : HHArmourType
-{
-	override string GetName()
+	override bool CheckItem(Inventory item)
 	{
-		return "WAN_SneakingSuit";
+		return (item.GetClassName() == "WAN_SneakingSuitWorn");
 	}
 
-	override string GetWornName()
-	{
-		return "WAN_SneakingSuitWorn";
-	}
-
-	override void DrawArmour(
-		HDStatusBar sb,
-		HDPickup hp,
-		int hdFlags,
-		int gzFlags
-	)
+	override void DrawHUDStuff(HCStatusbar sb, Inventory item, int hdFlags, int gzFlags)
 	{
 		let arm = WAN_SneakingSuitWorn(hp);
 		let hdp = HDPlayerPawn(arm.Owner);
