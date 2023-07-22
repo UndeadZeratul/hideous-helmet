@@ -16,9 +16,9 @@ class HHelmet : HDMagAmmo
 		Inventory.Amount 1;
 		HDMagammo.MaxPerUnit HHCONST_HUDHELMET;
 		HDMagammo.MagBulk ENC_HUDHELMET;
-		Tag "HUD Helmet";
+		Tag "$TAG_HHELMET";
 		Inventory.Icon "HELMA0";
-		Inventory.PickupMessage "Picked up the HUD helmet.";
+		Inventory.PickupMessage "$PICKUP_HHELMET";
 	}
 
 	override bool IsUsed()
@@ -85,13 +85,13 @@ class HHelmet : HDMagAmmo
 
 		if (helpText)
 		{
-			string blah = string.Format("You put on the helmet.");
+			string blah = Stringtable.Localize("$HHELMET_PUTON");
 			double qual = double(worn.Durability) / HHCONST_HUDHELMET;
-			if (qual < 0.2) A_Log(blah.." Just don't get hit.", true);
-			else if (qual < 0.3) A_Log(blah.." Does this helmet even work?", true);
-			else if (qual < 0.5) A_Log(blah.." It's better than nothing.", true);
-			else if (qual < 0.7) A_Log(blah.." This helmet has definitely seen better days.", true);
-			else if (qual < 0.9) A_Log(blah.." Seems to be fine.", true);
+			if (qual < 0.2) A_Log(blah..Stringtable.Localize("$HHELMET_DUR20"), true);
+			else if (qual < 0.3) A_Log(blah..Stringtable.Localize("$HHELMET_DUR30"), true);
+			else if (qual < 0.5) A_Log(blah..Stringtable.Localize("$HHELMET_DUR50"), true);
+			else if (qual < 0.7) A_Log(blah..Stringtable.Localize("$HHELMET_DUR70"), true);
+			else if (qual < 0.9) A_Log(blah..Stringtable.Localize("$HHELMET_DUR90"), true);
 			else A_Log(blah, true);
 		}
 
@@ -181,7 +181,7 @@ class HHelmetWorn : HDArmourWorn
 	Default {
 		HDPickup.RefId "hhw";
 		HDPickup.WornLayer 0; // Don't use WornLayer to handle removing helmet
-		Tag "HUD Helmet";
+		Tag "$TAG_HHELMET";
 	}
 
 	override void BeginPlay()
@@ -265,7 +265,7 @@ class HHelmetWorn : HDArmourWorn
 		tossed.Mags.Clear();
 		tossed.Mags.Push(Durability);
 		tossed.Amount = 1;
-		Owner.A_Log("Removing helmet first.", true);
+		Owner.A_Log(Stringtable.Localize("$HHELMET_REMOVE"), true);
 		Destroy();
 		return tossed;
 	}
@@ -534,8 +534,8 @@ class HudHelmet : HDPickupGiver
 		HDPickupGiver.PickupToGive "HHelmet";
 		HDPickup.Bulk 100;
 		HDPickup.RefId "hdh";
-		Tag "HUD Helmet (spare)";
-		Inventory.PickupMessage "Picked up the HUD helmet.";
+		Tag "$TAG_HHELMETSPARE";
+		Inventory.PickupMessage "$PICKUP_HHELMET";
 	}
 
 	override void ConfigureActualPickup()
