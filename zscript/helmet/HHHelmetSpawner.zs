@@ -1,9 +1,12 @@
 // The main helmet spawner handler
 class HHHelmetSpawner : EventHandler
 {
+	transient Array<HHSpawnType> SpawnTypes;
+
 	override void WorldLoaded(WorldEvent e)
 	{
 		New("HHSpawnType_Default");
+		SpawnTypes.Clear();
 	}
 
 	override void WorldThingSpawned(WorldEvent e)
@@ -12,14 +15,21 @@ class HHHelmetSpawner : EventHandler
 		Actor T = e.Thing;
 
 		// Find anything inheriting from HHSpawnType and use it :]
-		ThinkerIterator ti = ThinkerIterator.Create("HHSpawnType");
-
-		HHSpawnType hhst;
-		while (hhst = HHSpawnType(ti.next()))
+		if (SpawnTypes.Size() <= 0)
 		{
-			if (hhst.CheckConditions(T, Level.Time))
+			let ti = ThinkerIterator.Create("HHSpawnType", Thinker.STAT_DEFAULT);
+			HHSpawnType hhst;
+			while (hhst = HHSpawnType(ti.next()))
 			{
-				hhst.SpawnHelmet(T);
+				SpawnTypes.Push(hhst);
+			}
+		}
+
+		foreach (spawnType : SpawnTypes)
+		{
+			if (spawnType.CheckConditions(T, Level.Time))
+			{
+				spawnType.SpawnHelmet(T);
 				return;
 			}
 		}
