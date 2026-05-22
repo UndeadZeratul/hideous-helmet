@@ -1,54 +1,24 @@
 // This code is very hacky, might be a bit messy -dastrukar
 // Original code taken from Hideous Destructor
 
-// HDMagAmmo is used, due to how backpacks handle icons for HDArmour
-
-class HHelmet : HDMagAmmo
+class HHelmet : HDArmour
 {
 	int Cooldown;
 
 	Default
 	{
-		+Inventory.INVBAR
-		+HDPickup.CHEATNOGIVE
-		+HDPickup.NOTINPOCKETS
-		+Inventory.ISARMOR
-		Inventory.Amount 1;
+		-HDPickup.DROPTRANSLATION
 		HDMagammo.MaxPerUnit HHCONST_HUDHELMET;
 		HDMagammo.MagBulk ENC_HUDHELMET;
 		Tag "$TAG_HHELMET";
 		Inventory.Icon "HELMA0";
 		Inventory.PickupMessage "$PICKUP_HHELMET";
+		HDPickup.refid "hdh";
 	}
 
-	override bool IsUsed()
+	action void A_WearHelmet()
 	{
-		return true;
-	}
-
-	override int GetSBarNum(int flags)
-	{
-		int magSize = Mags.size() - 1;
-		if (magSize < 0) return -1000000;
-		else return Mags[magSize] % 1000;
-	}
-
-	override void AddAMag(int addAmt)
-	{
-		if (addAmt < 0) addAmt = HHCONST_HUDHELMET;
-		Mags.Push(addAmt);
-		Amount = Mags.Size();
-	}
-
-	override void MaxCheat()
-	{
-		SyncAmount();
-		for (int i = 0; i < Amount; i++) Mags[i] = HHCONST_HUDHELMET;
-	}
-
-	action void A_WearArmour()
-	{
-		bool helpText = (Player && CVar.GetCvar("hd_helptext", Player).GetBool());
+		bool helpText = HDWeapon.CheckDoHelpText(self);
 		Invoker.SyncAmount();
 		int dbl = Invoker.Mags[Invoker.Mags.Size() - 1];
 		//if holding use, cycle to next armour
@@ -83,25 +53,9 @@ class HHelmet : HDMagAmmo
 		Invoker.Amount--;
 		Invoker.Mags.Pop();
 
-		if (helpText)
-		{
-			string blah = Stringtable.Localize("$HHELMET_PUTON");
-			double qual = double(worn.Durability) / HHCONST_HUDHELMET;
-			if (qual < 0.2) A_Log(blah..Stringtable.Localize("$HHELMET_DUR20"), true);
-			else if (qual < 0.3) A_Log(blah..Stringtable.Localize("$HHELMET_DUR30"), true);
-			else if (qual < 0.5) A_Log(blah..Stringtable.Localize("$HHELMET_DUR50"), true);
-			else if (qual < 0.7) A_Log(blah..Stringtable.Localize("$HHELMET_DUR70"), true);
-			else if (qual < 0.9) A_Log(blah..Stringtable.Localize("$HHELMET_DUR90"), true);
-			else A_Log(blah, true);
-		}
+		invoker.WearHelmetHelpText(self, dbl);
 
 		invoker.SyncAmount();
-	}
-
-	override void DoEffect()
-	{
-		if (Cooldown > 0) Cooldown--;
-		if (!Amount) Destroy();
 	}
 
 	override void ActualPickup(actor other, bool silent)
@@ -133,31 +87,27 @@ class HHelmet : HDMagAmmo
 		other.A_Log(string.Format("\cg%s", PickupMessage()), true);
 	}
 
-	override void BeginPlay()
+	override double GetMagBulk(int loaded)
 	{
-		Cooldown = 0;
-		Super.BeginPlay();
+		return ENC_HUDHELMET;
 	}
 
-	override void Consolidate() {}
-
-	override double GetBulk()
+	void WearHelmetHelpText(actor wearer, double durability)
 	{
-		SyncAmount();
-		double blk = 0;
-		for (int i = 0; i < Amount; i++) blk += ENC_HUDHELMET;
-		return blk;
-	}
-
-	override void SyncAmount()
-	{
-		if (Amount < 1)
-		{
-			Destroy();
-			return;
-		}
-		Super.SyncAmount();
-		for (int i = 0; i < Amount; i++) Mags[i] = Min(Mags[i], HHCONST_HUDHELMET);
+		if (!HDWeapon.CheckDoHelpText(wearer)) return;
+		string opinion = "";
+		double qual = durability / maxperunit;
+		if (qual < 0.2)     opinion = "$HHELMET_DUR20";
+		else if(qual < 0.3) opinion = "$HHELMET_DUR30";
+		else if(qual < 0.6) opinion = "$HHELMET_DUR60";
+		else if(qual < 0.7) opinion = "$HHELMET_DUR70";
+		else if(qual < 0.9) opinion = "$HHELMET_DUR90";
+		wearer.A_Log(
+			Stringtable.Localize("$HHELMET_PUTON")
+			..gettag()
+			..Stringtable.Localize("$HD_SENTENCEBREAK")
+			..Stringtable.Localize(opinion)
+		,true);
 	}
 
 	States
@@ -166,7 +116,7 @@ class HHelmet : HDMagAmmo
 			HELM A -1;
 			stop;
 		Use:
-			TNT1 A 0 A_WearArmour();
+			TNT1 A 0 A_WearHelmet();
 			fail;
 	}
 }
@@ -179,25 +129,20 @@ class HHelmetWorn : HDArmourWorn
 	int bodyDamage;
 
 	Default {
+		Tag "$TAG_HHELMET";
+
 		HDPickup.RefId "hhw";
 		HDPickup.WornLayer 0; // Don't use WornLayer to handle removing helmet
-		Tag "$TAG_HHELMET";
+		HDPickup.bulk ENC_HUDHELMET * 0.1;
+
+		HDArmourWorn.armoursprite "HELMA0";
+		HDARmourWorn.armourback "HELMB0";
+
+		HDArmourWorn.durability HHCONST_HUDHELMET;
 	}
 
-	override void BeginPlay()
-	{
-		Super.BeginPlay();
-		Durability = HHCONST_HUDHELMET;
-	}
-
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-	}
-
-	override double GetBulk()
-	{
-		return ENC_HUDHELMET * 0.1;
+	override double RestrictSpeed(double speedcap){
+		return speedcap;
 	}
 
 	override void DrawHudStuff(
@@ -208,8 +153,6 @@ class HHelmetWorn : HDArmourWorn
 	)
 	{
 		// Drawing helmet on the HUD is handled in statusbar.zs for layering reasons.
-		string helmetSprite = "HELMA0";
-		string helmetBack = "HELMB0";
 		bool d = hh_durabilitytop;
 
 		Vector2 helmpos =
@@ -219,13 +162,13 @@ class HHelmetWorn : HDArmourWorn
 		Vector2 coords = (helmPos.x, helmPos.y + hh_helmetoffsety);
 
 		sb.DrawBar(
-			helmetSprite, helmetBack,
-			Durability, 72,
+			armoursprite, armourback,
+			durability, default.durability,
 			coords, -1, sb.SHADER_VERT,
 			gzFlags
 		);
 		sb.DrawString(
-			sb.pNewSmallFont, sb.FormatNumber(Durability),
+			sb.pNewSmallFont, sb.FormatNumber(durability),
 			coords + (10, (d)? -14 : -7),
 			gzFlags | sb.DI_ITEM_CENTER | sb.DI_TEXT_ALIGN_RIGHT,
 			Font.CR_DARKGRAY,
@@ -256,15 +199,18 @@ class HHelmetWorn : HDArmourWorn
 		}
 
 		//finally actually take off the armour
-		HDArmour.ArmourChangeEffect(Owner);
-		let tossed = HHelmet(Owner.Spawn(
-			"HHelmet",
+		string tosstype = GetClassName();
+		tossType = tossType.left(tossType.length() - 4);
+		let tossed = HDArmour(Owner.Spawn(
+			tossType,
 			(Owner.Pos.x, Owner.Pos.y, Owner.Pos.z + Owner.Height - 20),
 			ALLOW_REPLACE
 		));
 		tossed.Mags.Clear();
 		tossed.Mags.Push(Durability);
 		tossed.Amount = 1;
+
+		HDArmour.ArmourChangeEffect(Owner);
 		Owner.A_Log(Stringtable.Localize("$HHELMET_REMOVE"), true);
 		Destroy();
 		return tossed;
@@ -387,8 +333,7 @@ class HHelmetWorn : HDArmourWorn
 
 		let hdmb = HDMobBase(hitActor);
 		let hdp = HDPlayerPawn(hitActor);
-		double hitHeight = hitActorIsTall? ((hitPos.z - hitActor.Pos.z) / hitActor.Height) : 0.5;
-
+		
 		// If standing right over an incap'd victim, bypass armour
 		if (
 			bullet.Pitch > 80 &&
@@ -402,44 +347,84 @@ class HHelmetWorn : HDArmourWorn
 			)
 		) return pen, penShell;
 
+		double hitHeight = hitActorIsTall? ((hitPos.z - hitActor.Pos.z) / hitActor.Height) : 0.5;
+
 		// i mean, do you really expect a damaged helmet to block damage as well as it should?
 		float sucks = Durability * FRandom(0.4, 1.8);
+		float helmetShell = (sucks > 25)? FRandom(15, 20) : FRandom(5, 10);
+
 		if (hh_debug) Console.PrintF(hitActor.GetClassName().."  helmet sucks:  "..sucks);
 
-		float helmetShell = (sucks > 25)? FRandom(15, 20) : FRandom(5, 10);
-		bool headshot = (hitHeight > 0.8);
-		bool legshot = (hitHeight < 0.5);
-		if (legshot)
-		{
-			// don't protect the legs
-			helmetshell = 0;
-		}
-		else if (!headshot)
-		{
-			// imagine that the helmet has a magical net
-			// also, enemies don't always aim for your "head" anyways, so it's kind of pointless for it to just protect the "head"
-			helmetShell *= 0.5;
-		}
+		//poorer armour on limbs and torso
+		//sometimes slip through a gap
+		int crackseed=int(level.time+angle)&(1|2|4|8|16|32);
+		int gotHitLocation=GetHitLocation(bullet,hitactor,hitheight,hitangle,crackseed);
+
+		//mutator cvar limits coverage to torso
+		// if(
+		// 	hd_armourvest
+		// 	&&gotHitLocation!=ARMOUR_TORSO
+		// )return pen,penshell;
 
 		string debugText;
-		if (hh_debug && headshot) debugText = "HEADSHOT.";
-		else if (hh_debug && legshot) debugText = "leg shot.";
-		else if (hh_debug) debugText = "body shot.";
+
+		switch (gotHitLocation) {
+			case ARMOUR_FACE:
+				//face: assume resistant but not perfect visor
+				helmetShell *= frandom(0.1,0.9);
+				if (hh_debug) debugText = "HEADSHOT.";
+				headshots++;
+				break;
+			case ARMOUR_HEAD:
+				//head: thinner material required
+				if(hdmb && !hdmb.bHASHELMET)
+				{
+					helmetShell = -1;
+				}
+				else
+				{
+					helmetShell = min(helmetShell, frandom(10, 20));
+				}
+
+				if (hh_debug) debugText = "HEADSHOT.";
+				headshots++;
+				break;
+			case ARMOUR_ARMS:
+				//arms: don't protect the limbs
+				helmetShell = 0;
+				bodyshots++;
+				break;
+			case ARMOUR_LEGS:
+				//legs: don't protect the limbs
+				helmetShell = 0;
+				if (hh_debug) debugText = "leg shot.";
+				bodyshots++;
+				break;
+			case ARMOUR_TORSO:
+			default:
+				// imagine that the helmet has a magical net
+				// also, enemies don't always aim for your "head" anyways, so it's kind of pointless for it to just protect the "head"
+				helmetShell *= 0.5;
+				bodyshots++;
+				if (hh_debug) debugText = "body shot.";
+				break;
+		}
+
 
 		if (debugText) Console.PrintF(debugText);
 
 		// durability stuff
-		if (helmetshell > 0)
+		if (helmetShell > 0)
 		{
 			// helmet takes some damage
-			int ddd = Random(-1, (int(Min(pen, helmetShell) * bullet.Stamina) >> 12));
+			int ddd = Random(-1, (int(Min(pen, helmetShell) * bullet.Stamina) * 0.0005));
 
-			if (hh_debug) Console.PrintF("Random(Min("..pen..", "..helmetshell..") * "..bullet.Stamina.." >> 12) = "..ddd);
+			if (hh_debug) Console.PrintF("Random(Min("..pen..", "..helmetShell..") * "..bullet.Stamina.." * 0.0005) = "..ddd);
 
 			if (ddd < 1)
 			{
 				bool penetrated = (pen > helmetShell);
-				if (headshot)
+				if (gotHitLocation == ARMOUR_FACE || gotHitLocation == ARMOUR_HEAD)
 				{
 					if (
 						penetrated ||
@@ -464,22 +449,23 @@ class HHelmetWorn : HDArmourWorn
 				Durability -= ddd;
 				if (hh_debug) Console.PrintF("helmet took "..ddd.." damage");
 
-				if (headshot) headDamage += ddd;
-				else bodyDamage += ddd;
+				if (gotHitLocation == ARMOUR_FACE || gotHitLocation == ARMOUR_HEAD)
+				{
+					headDamage += ddd;
+				}
+				else
+				{
+					bodyDamage += ddd;
+				}
 			}
-
-			// For debugging
-			if (headshot) headshots++;
-			else bodyshots++;
 		}
 		else if (hh_debug) Console.PrintF("missed the helmet!");
 
 		if (hh_debug) Console.PrintF(hitActor.getclassname().."  helmet resistance:  "..helmetShell);
 		penShell += helmetShell;
 
-		// Helmet can't take it anymore :[
-		if (Durability < 1) BreakSelf();
 
+		//add some knockback even when target unhurt
 		if (
 			penShell > pen &&
 			hitActor.Health > 0 &&
@@ -500,6 +486,10 @@ class HHelmetWorn : HDArmourWorn
 			}
 		}
 
+
+		// Helmet can't take it anymore :[
+		if (Durability < 1) BreakSelf();
+
 		return pen, penshell;
 	}
 
@@ -517,32 +507,5 @@ class HHelmetWorn : HDArmourWorn
 		A_Log("damage before: "..damage);
 		A_Log("helmet took "..actualDamage.." "..mod.." damage");
 		A_Log(string.format("damage %d", damage));
-	}
-}
-
-class HudHelmet : HDPickupGiver
-{
-	Default
-	{
-		//$Category "Items/Hideous Destructor"
-		//$Title "HUD Helmet"
-		//$Sprite "ARMCA0"
-
-		+HDPickup.FITSINBACKPACK
-		+Inventory.ISARMOR
-		Inventory.Icon "HELMA0";
-		HDPickupGiver.PickupToGive "HHelmet";
-		HDPickup.Bulk 100;
-		HDPickup.RefId "hdh";
-		Tag "$TAG_HHELMETSPARE";
-		Inventory.PickupMessage "$PICKUP_HHELMET";
-	}
-
-	override void ConfigureActualPickup()
-	{
-		let aaa = HHelmet(ActualItem);
-		aaa.Mags.Clear();
-		aaa.Mags.Push(HHCONST_HUDHELMET);
-		aaa.SyncAmount();
 	}
 }
