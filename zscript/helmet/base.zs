@@ -158,14 +158,41 @@ class HHelmetWorn : HDArmourWorn
 
 	override Inventory CreateTossable(int amt)
 	{
+		if (HDPlayerPawn(Owner) && HDPlayerPawn(Owner).striptime > 0)
+			return null;
+
 		PrintHelmetDebug();
 
-		let onr = Owner;
+		//armour sometimes crumbles into dust
+		if (Durability < Random(1, 5))
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				Actor aaa = Spawn("WallChunk", Owner.Pos + (0, 0, Owner.Height - 24), ALLOW_REPLACE);
+				Vector3 offsPos = (FRandom(-12, 12), FRandom(-12, 12), FRandom(-16, 4));
+				aaa.SetOrigin(aaa.Pos + offsPos, false);
+				aaa.Vel = Owner.Vel + offsPos * FRandom(0.3, 0.6);
+				aaa.Scale *= FRandom(0.8 ,2.);
+			}
+			BreakSelf();
+			return null;
+		}
 
-		let tossed = super.CreateTossable(amt);
+		//finally actually take off the armour
+		string tosstype = GetClassName();
+		tossType = tossType.left(tossType.length() - 4);
+		let tossed = HDArmour(Owner.Spawn(
+			tossType,
+			(Owner.Pos.x, Owner.Pos.y, Owner.Pos.z + Owner.Height - 20),
+			ALLOW_REPLACE
+		));
+		tossed.Mags.Clear();
+		tossed.Mags.Push(Durability);
+		tossed.Amount = 1;
 
-		if (tossed) onr.A_Log(Stringtable.Localize("$HHELMET_REMOVE"), true);
-
+		tossed.onArmourChange(Owner);
+		Owner.A_Log(Stringtable.Localize("$HHELMET_REMOVE"), true);
+		Destroy();
 		return tossed;
 	}
 
@@ -210,5 +237,14 @@ class HHelmetWorn : HDArmourWorn
 	void PrintHelmetDebug()
 	{
 		if (hh_debug) Console.PrintF("Helmet stats:\n Headshots: "..headshots.."("..headdamage..")\n Bodyshots: "..bodyshots.."("..bodydamage..")");
+	}
+
+	// For convenience
+	void BreakSelf()
+	{
+		PrintHelmetDebug();
+		Owner.A_StartSound("helmet/break", CHAN_BODY);
+		HDArmour.ArmourChangeEffect(Owner);
+		Destroy();
 	}
 }
