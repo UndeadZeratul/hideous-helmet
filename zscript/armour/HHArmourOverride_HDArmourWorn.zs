@@ -14,18 +14,13 @@ class HHArmourOverride_HDArmourWorn : HCItemOverride
 	override void DrawHUDStuff(HCStatusbar sb, Inventory item, int hdFlags, int gzFlags)
 	{
 		let arm = HDArmourWorn(item);
-		let hdp = HDPlayerPawn(arm.Owner);
 		Vector2 coords =
 			(hdFlags & HDSB_AUTOMAP)? (4, 86) :
 			(hdFlags & HDSB_MUGSHOT)? (((sb.HudLevel == 1)? -85 : -55), -4) :
 			(0, -sb.mIndexFont.mFont.GetHeight() * 2);
-		let isMega = arm is "BattleArmourWorn";
-		string armourSprite = isMega ? "ARMCA0" : "ARMSA0";
-		string armourBack = isMega ? "ARMER1" : "ARMER0";
 		sb.DrawBar(
-			armourSprite, armourBack,
-			arm.Durability,
-			isMega ? HDCONST_BATTLEARMOUR : HDCONST_GARRISONARMOUR,
+			arm.armourSprite, arm.armourBack,
+			arm.Durability, arm.default.durability,
 			coords, -1, sb.SHADER_VERT,
 			gzFlags | sb.DI_TRANSLATABLE
 		);
